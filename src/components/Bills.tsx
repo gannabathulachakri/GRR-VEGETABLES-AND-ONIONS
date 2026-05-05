@@ -51,47 +51,90 @@ export default function Bills({ farmitre, onEditStock }: BillsProps) {
       year: 'numeric'
     });
 
-    let message = `*GRR*\n_vegetables and onions_\n\n`;
-    message += `${t("farmer")}: ${farmer?.name}\n`;
-    message += `${t("date")}: ${indiaDate}\n\n`;
+    let message = isTe ? `*గర్ర్ కూరగాయలు మరియు ఉల్లిపాయ*\n` : `*GRR VEGTABLES AND ONION*\n`;
+    message += `———————————————\n\n`;
+    message += `                  Date: ${indiaDate}\n`;
 
     let totalGross = 0;
     let totalExpenses = 0;
 
-    stockGroup.forEach((item, index) => {
+    stockGroup.forEach((item) => {
       const veg = VEGETABLES.find((v) => v.id === item.vegetableId);
       const vegName = isTe ? veg?.nameTe : veg?.nameEn;
+      const bagsLabel = isTe ? "బస్తాలు" : "Bags";
+      const totalKgsLabel = isTe ? "మొత్తం కిలోలు" : "Total KGs";
+      const salesLabel = isTe ? "అమ్మకం వివరాలు" : "Sales Details";
       
       const salesTotal = item.pricingRows.reduce((acc: number, row: any) => acc + (row.kgs * row.price), 0);
-      const expensesTotal = item.expenses.reduce((acc: number, exp: any) => acc + exp.amount, 0);
+      const commissionTotal = Math.round(salesTotal * 0.1);
+      const importChargeTotal = item.importedBags * 15;
+      const expensesTotal = item.expenses.reduce((acc: number, exp: any) => acc + exp.amount, 0) + commissionTotal + importChargeTotal;
       
       totalGross += salesTotal;
       totalExpenses += expensesTotal;
 
-      message += `*${index + 1}. ${vegName}*\n`;
-      message += `${t("importedBags")}: *${item.importedBags}*, ${t("totalKgsLabel")}: *${item.totalKgs} ${t("kgs")}*\n\n`;
-      
-      message += `*${t("pricingDetails")}*\n`;
-      item.pricingRows.forEach((r: any) => {
-        const rowTotal = r.kgs * r.price;
-        message += `  • *${r.kgs} ${t("kgs")}* @ *₹${Math.round(r.price)}* = *₹${Math.round(rowTotal).toLocaleString()}*\n`;
-      });
-      message += `\n`;
-
-      message += `${t("soldBags")}: *${item.soldBags}*, ${t("soldKgs")}: *${item.soldKgs} ${t("kgs")}*\n`;
-      message += `${t("remainingBags")}: *${item.importedBags - item.soldBags}*, ${t("remainingKgs")}: *${item.totalKgs - item.soldKgs} ${t("kgs")}*\n`;
-      
-      if (item.expenses.length > 0) {
-        message += `  ${t("expenses")}: *₹${Math.round(expensesTotal).toLocaleString()}*\n`;
+      if (isTe) {
+        message += `${vegName} :        ${item.importedBags} ${bagsLabel}\n`;
+        message += `${totalKgsLabel} :     ${item.totalKgs} kg\n\n`;
+      } else {
+        message += ` Total bags : ${item.importedBags} ${bagsLabel}\n`;
+        message += `Total kg : ${item.totalKgs} kg\n\n`;
       }
       
-      message += `  ${t("item")} ${t("net")}: *₹${Math.round(salesTotal - expensesTotal).toLocaleString()}*\n\n`;
+      message += `${isTe ? "అమ్మకం వివరాలు" : "pricing details"} :\n`;
+      
+      // Group pricing by rate for summary
+      const groupedPricingRows = item.pricingRows.reduce((acc: { price: number; kgs: number }[], row: any) => {
+        if (row.kgs <= 0 || row.price <= 0) return acc;
+        const existing = acc.find((group: any) => group.price === row.price);
+        if (existing) {
+          existing.kgs += row.kgs;
+        } else {
+          acc.push({ price: row.price, kgs: row.kgs });
+        }
+        return acc;
+      }, []);
+
+      groupedPricingRows.sort((a: any, b: any) => b.price - a.price).forEach((r: any) => {
+        const rowTotal = r.kgs * r.price;
+        message += `${r.kgs} kg * ${r.price} ₹ = ${Math.round(rowTotal).toLocaleString().padStart(8)}\n`;
+      });
+      
+      message += `———————\n`;
+      const totalValueLabel = isTe ? "మొత్తం విలువ" : "Total amount";
+      message += `${totalValueLabel} - ${Math.round(salesTotal).toLocaleString().padStart(8)}\n`;
+
+      // Commission line
+      const commLabel = isTe ? "కమిషను" : "Commission";
+      message += `${commLabel.padEnd(10)} - ${Math.round(commissionTotal).toLocaleString().padStart(12)}\n`;
+
+      // Import Charges line
+      const importLabel = isTe ? "దిగుమతి" : "Import";
+      message += `${importLabel.padEnd(10)} - ${Math.round(importChargeTotal).toLocaleString().padStart(12)}\n`;
+
+      // Individual Expenses
+      item.expenses.forEach(exp => {
+        const label = isTe ? (exp.name === "Hire" ? "కిరాయి" : exp.name) : (exp.name === "Hire" ? "Hire" : exp.name);
+        message += `${label.padEnd(10)} - ${Math.round(exp.amount).toLocaleString().padStart(12)}\n`;
+      });
+      
+      message += `———————\n`;
+      const itemNet = salesTotal - expensesTotal;
+      const netValueLabel = isTe ? "నికర విలువ" : "Net value";
+      message += `${netValueLabel}.        ${Math.round(itemNet).toLocaleString()}\n\n`;
+
+      // Storage Info
+      const storageBagsLabel = isTe ? "నిల్వ బస్తాలు" : "Storage bags";
+      const storageKgsLabel = isTe ? "నిల్వ కిలోలు" : "Storage kg";
+      message += `${storageBagsLabel} :${item.importedBags - item.soldBags}\n`;
+      message += `${storageKgsLabel}:${item.totalKgs - item.soldKgs} kg \n\n`;
     });
 
-    message += `------------------------\n`;
-    message += `*${t("grossTotalCapital")}: ₹${Math.round(totalGross).toLocaleString()}*\n`;
-    message += `*${t("totalExpensesCapital")}: ₹${Math.round(totalExpenses).toLocaleString()}*\n`;
-    message += `*${t("finalPayableCapital")}: ₹${Math.round(totalGross - totalExpenses).toLocaleString()}*\n\n`;
+    if (stockGroup.length > 1) {
+      message += `-------------------------------\n`;
+      message += `*${t("finalPayableCapital")}: ₹${Math.round(totalGross - totalExpenses).toLocaleString()}*\n`;
+    }
+    
     message += `_${t("generatedVia")}_`;
 
     const whatsappUrl = `https://wa.me/${farmer?.phone?.replace(/\D/g, '') || ""}?text=${encodeURIComponent(message)}`;
@@ -124,22 +167,40 @@ export default function Bills({ farmitre, onEditStock }: BillsProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-10 pb-20">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="mb-2">
-            <h1 className="text-2xl font-black text-brand-950 uppercase tracking-tighter leading-none">GRR</h1>
-            <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest -mt-0.5">vegetables and onions</p>
-          </div>
-          <h2 className="text-2xl font-bold text-slate-800">{t("bills")}</h2>
-          <p className="text-slate-500">{groupedStocks.length} {t("history")} batches</p>
+          <span className="label-caps">History</span>
+          <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">{t("bills")}</h2>
+        </div>
+        <div className="flex items-center gap-2">
+           <div className="bg-slate-50 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/50 dark:border-white/5 flex">
+             <button 
+              onClick={() => setSortType("date")}
+              className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all", sortType === "date" ? "bg-white dark:bg-white/10 shadow-sm text-primary" : "text-slate-400")}
+             >
+                By Date
+             </button>
+             <button 
+              onClick={() => setSortType("amount")}
+              className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all", sortType === "amount" ? "bg-white dark:bg-white/10 shadow-sm text-primary" : "text-slate-400")}
+             >
+                By Amount
+             </button>
+           </div>
         </div>
       </header>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {groupedStocks.length === 0 ? (
-          <div className="glass-card p-12 text-center text-slate-400 font-medium">
-            {t("noFarmersFound")}
+          <div className="premium-card p-20 flex flex-col items-center justify-center text-center space-y-4 border-dashed bg-transparent">
+             <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center text-slate-300">
+                <FileText size={32} />
+              </div>
+              <div className="max-w-xs">
+                <p className="text-lg font-bold text-slate-700 dark:text-slate-300">No records yet</p>
+                <p className="text-sm text-slate-400 mt-1">Generate a bill to see it in your history.</p>
+              </div>
           </div>
         ) : (
           groupedStocks.map((group) => {
@@ -148,7 +209,9 @@ export default function Bills({ farmitre, onEditStock }: BillsProps) {
             
             const groupTotal = group.reduce((acc, s) => {
               const sales = s.pricingRows.reduce((sum: number, r: any) => sum + (r.kgs * r.price), 0);
-              const exp = s.expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+              const commission = Math.round(sales * 0.1);
+              const importCharge = (s.importedBags - (s.oldBags || 0)) * 15;
+              const exp = s.expenses.reduce((sum: number, e: any) => sum + e.amount, 0) + commission + importCharge;
               return acc + (sales - exp);
             }, 0);
 
@@ -157,102 +220,123 @@ export default function Bills({ farmitre, onEditStock }: BillsProps) {
               return i18n.language === "te" ? v?.nameTe : v?.nameEn;
             }).join(", ");
 
+            const batchId = `${firstStock.farmerId}_${firstStock.date.substring(0, 10)}`;
+
             return (
-              <div key={`${firstStock.farmerId}_${firstStock.date}`} className="glass-card overflow-hidden border-l-4 border-brand-500">
-                <div className="p-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/30">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-sm font-bold text-brand-600 shadow-sm">
-                      {group.length > 1 ? <FileText size={20} /> : (VEGETABLES.find(v => v.id === firstStock.vegetableId)?.emoji || (i18n.language === "te" ? VEGETABLES.find(v => v.id === firstStock.vegetableId)?.nameTe.charAt(0) : VEGETABLES.find(v => v.id === firstStock.vegetableId)?.nameEn.charAt(0)))}
+              <div key={batchId} className="premium-card overflow-hidden border-l-4 border-l-primary group">
+                <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.02]">
+                  <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 bg-white dark:bg-white/5 border border-slate-200/60 dark:border-white/10 rounded-2xl flex items-center justify-center text-2xl shadow-sm group-hover:scale-105 transition-transform">
+                      {group.length > 1 ? "🧾" : (VEGETABLES.find(v => v.id === firstStock.vegetableId)?.emoji || "📦")}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900">{farmer?.name}</p>
-                      <p className="text-xs text-slate-500 flex items-center gap-1">
-                        <Calendar size={12} />
-                        {new Date(firstStock.date).toLocaleDateString()}
-                        {group.length > 1 && <span className="ml-2 bg-brand-100 text-brand-700 px-1.5 rounded-full text-[10px] font-bold">{group.length} items</span>}
+                      <h4 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{farmer?.name}</h4>
+                      <p className="text-sm text-slate-400 font-medium flex items-center gap-2 mt-1">
+                        <Calendar size={14} className="opacity-60" />
+                        {new Date(firstStock.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {group.length > 1 && <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">{group.length} Items</span>}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-brand-600">{formatCurrency(groupTotal, i18n.language)}</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black max-w-[120px] truncate">{vegNames}</p>
+                  <div className="md:text-right flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start">
+                    <div className="md:mb-1">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.15em] mb-0.5">Payable Amount</p>
+                      <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums">{formatCurrency(groupTotal, i18n.language)}</p>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-3 py-1 bg-slate-100 dark:bg-white/5 rounded-full max-w-[200px] truncate">{vegNames}</p>
                   </div>
                 </div>
                 
-                <div className="bg-white/50 px-4 py-2 text-xs space-y-2">
+                <div className="p-4 md:p-8 space-y-4 bg-white/40 dark:bg-transparent">
                   {group.map((s, idx) => {
                     const v = VEGETABLES.find(veg => veg.id === s.vegetableId);
                     const vName = i18n.language === "te" ? v?.nameTe : v?.nameEn;
                     const itmSales = s.pricingRows.reduce((a: number, r: any) => a + (r.kgs * r.price), 0);
+                    const itmComm = Math.round(itmSales * 0.1);
+                    const itmImport = (s.importedBags - (s.oldBags || 0)) * 15;
+                    const itmExp = s.expenses.reduce((a: number, e: any) => a + e.amount, 0) + itmComm + itmImport;
+                    const itmNet = itmSales - itmExp;
+                    
                     return (
-                      <div key={s.id} className="flex items-center justify-between group/item py-1 border-b border-slate-100 last:border-0 hover:bg-slate-100/50 -mx-2 px-2 rounded-lg transition-colors">
+                      <div key={s.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-5 bg-slate-50/50 dark:bg-white/[0.03] rounded-2xl border border-slate-100 dark:border-white/5 group/item transition-all hover:bg-slate-50 dark:hover:bg-white/[0.05]">
                         <div className="flex-1">
-                          <p className="text-slate-600 dark:text-slate-200 font-medium">{idx+1}. {vName}</p>
-                          <div className="flex flex-wrap gap-x-2 text-slate-400 dark:text-slate-500 text-[10px]">
-                            <span>{t("importedBags")}: {s.importedBags}</span>
-                            <span>{t("soldBags")}: {s.soldBags} ({s.soldKgs} {t("kgs")})</span>
-                            <span className="text-brand-600 dark:text-brand-400 font-bold">{t("remaining") || "Rem"}: {s.importedBags - s.soldBags} ({s.totalKgs - s.soldKgs} {t("kgs")})</span>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="w-5 h-5 flex items-center justify-center bg-slate-200 dark:bg-white/10 rounded-full text-[10px] font-bold text-slate-500">{idx+1}</span>
+                            <p className="text-base font-bold text-slate-800 dark:text-slate-200">{vName}</p>
                           </div>
-                          <p className="text-brand-600 dark:text-brand-400 font-bold text-[10px] mt-0.5">₹{Math.round(itmSales).toLocaleString()}</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
+                            <div className="flex flex-col">
+                              <span className="label-caps opacity-50 text-[8px] mb-0.5">{t("bags")}</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{s.importedBags} <span className="text-[10px] opacity-40 uppercase">Total</span></span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="label-caps opacity-50 text-[8px] mb-0.5">Sold/Rem</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{s.soldBags} / {s.importedBags - s.soldBags}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="label-caps opacity-50 text-[8px] mb-0.5">{t("totalKgs")}</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{s.totalKgs} kg</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="label-caps opacity-50 text-[8px] text-primary mb-0.5">Net Value</span>
+                              <span className="text-sm font-black text-primary">₹{Math.round(itmNet).toLocaleString()}</span>
+                            </div>
+                          </div>
                         </div>
-                          <div className="flex items-center gap-1">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onEditStock(s);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all"
-                              title="Edit Item"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteSingle(s);
-                              }}
-                              className={cn(
-                                "p-1.5 rounded-lg transition-all flex items-center gap-1",
-                                confirmDeleteId === s.id 
-                                  ? "bg-rose-500 text-white animate-pulse" 
-                                  : "text-slate-400 hover:text-rose-500 hover:bg-rose-50"
-                              )}
-                              title={confirmDeleteId === s.id ? t("confirmDelete") : "Delete Item"}
-                            >
-                              {confirmDeleteId === s.id ? (
-                                <span className="text-[9px] font-bold uppercase">{t("save") === "Save" ? "Confirm" : "నిర్ధారించు"}</span>
-                              ) : (
-                                <Trash2 size={14} />
-                              )}
-                            </button>
-                          </div>
+
+                        <div className="flex items-center gap-2 justify-end md:border-l border-slate-100 dark:border-white/5 md:pl-6">
+                          <button 
+                            onClick={() => onEditStock(s)}
+                            className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 rounded-xl transition-all active:scale-90"
+                            title="Edit Item"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteSingle(s)}
+                            className={cn(
+                              "h-10 px-3 rounded-xl transition-all flex items-center gap-2 font-bold text-xs uppercase transition-all active:scale-95",
+                              confirmDeleteId === s.id 
+                                ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" 
+                                : "text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                            )}
+                          >
+                            {confirmDeleteId === s.id ? (
+                               <>
+                                 <CheckCircle2 size={14} />
+                                 <span>Confirm</span>
+                               </>
+                            ) : (
+                              <Trash2 size={16} />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="p-3 flex gap-2">
+                <div className="p-6 md:p-8 pt-0 flex flex-col sm:flex-row gap-4">
                   <button 
                     onClick={() => handleShare(group)}
-                    className="flex-1 btn-primary py-2.5 text-xs shadow-md"
+                    className="flex-1 btn-primary h-14 text-sm uppercase tracking-widest shadow-xl shadow-primary/20"
                   >
-                    <Share2 size={16} />
+                    <Share2 size={18} strokeWidth={2.5} />
                     {t("sendBill")}
                   </button>
                   <button 
                     onClick={() => handleDelete(group)}
                     className={cn(
-                      "p-2.5 rounded-xl transition-all border flex items-center justify-center gap-2",
-                      confirmDeleteBatchId === `${firstStock.farmerId}_${firstStock.date.substring(0, 10)}`
-                        ? "bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-200 animate-pulse px-4"
-                        : "text-rose-500 hover:bg-rose-50 border-transparent hover:border-rose-100"
+                      "h-14 px-8 rounded-[16px] font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2",
+                      confirmDeleteBatchId === batchId
+                        ? "bg-rose-600 text-white shadow-2xl shadow-rose-500/30 w-full sm:w-auto"
+                        : "bg-slate-50 dark:bg-white/5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10"
                     )}
-                    title="Delete Batch"
                   >
-                    {confirmDeleteBatchId === `${firstStock.farmerId}_${firstStock.date.substring(0, 10)}` ? (
+                    {confirmDeleteBatchId === batchId ? (
                       <>
                         <AlertTriangle size={18} />
-                        <span className="text-[10px] font-black uppercase tracking-tight">Confirm Delete</span>
+                        <span>Confirm Batch Delete</span>
                       </>
                     ) : (
                       <Trash2 size={20} />

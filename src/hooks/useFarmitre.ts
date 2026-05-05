@@ -84,8 +84,10 @@ export function useFarmitre() {
 
   const calculateStockTotal = (stock: VegetableStock) => {
     const salesTotal = stock.pricingRows.reduce((acc, row) => acc + (row.kgs * row.price), 0);
-    const expensesTotal = stock.expenses.reduce((acc, exp) => acc + exp.amount, 0);
-    return salesTotal - expensesTotal;
+    const commission = Math.round(salesTotal * 0.1);
+    const importCharge = (stock.importedBags - (stock.oldBags || 0)) * 15;
+    const extraExpenses = stock.expenses.reduce((acc, exp) => acc + exp.amount, 0);
+    return salesTotal - (commission + importCharge + extraExpenses);
   };
 
   return {

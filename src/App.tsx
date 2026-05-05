@@ -59,89 +59,101 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col pb-24 lg:pb-0 lg:pl-64 transition-colors duration-300">
+    <div className="min-h-screen bg-[#FBFBFB] dark:bg-[#0A0A0A] flex flex-col pb-24 lg:pb-0 lg:pl-72 transition-colors duration-500">
       {/* Sidebar for Desktop */}
-      <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white text-2xl">
-            🌱
+      <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 w-72 bg-white dark:bg-[#111] border-r border-slate-200/60 dark:border-white/5 z-50">
+        <div className="p-8">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-11 h-11 bg-primary rounded-[14px] flex items-center justify-center text-white text-2xl shadow-lg shadow-primary/20">
+              🌱
+            </div>
+            <div className="flex flex-col leading-none">
+              <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-1">
+                {t("appName").split(' ')[1] || t("appName")}
+              </span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Farmite Platform
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-2xl font-black text-brand-950 dark:text-white uppercase tracking-tighter">GRR</span>
-            <span className="text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest -mt-1">vegetables and onions</span>
-          </div>
+          
+          <nav className="space-y-1.5">
+            {navItems.map((item) => {
+              const isActive = activeView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id as View)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3.5 rounded-[14px] font-bold transition-all text-left group",
+                    isActive 
+                      ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl shadow-slate-900/10" 
+                      : "text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
+                  )}
+                >
+                  <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform group-active:scale-90", isActive ? "text-primary" : "")} />
+                  <span className="text-sm">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
-        
-        <nav className="flex-1 px-4 space-y-2 mt-4">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id as View)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left",
-                activeView === item.id 
-                  ? "bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400" 
-                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
-              )}
-            >
-              <item.icon size={20} />
-              {item.label}
-            </button>
-          ))}
-        </nav>
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 space-y-3">
-          <button 
-            onClick={toggleTheme}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-300"
-          >
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            {theme === "dark" ? t("light") : t("dark")}
-          </button>
-          <button 
-            onClick={() => i18n.changeLanguage(i18n.language === "en" ? "te" : "en")}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-300"
-          >
-            <Globe size={16} />
-            {i18n.language === "en" ? "తెలుగు" : "English"}
-          </button>
+        <div className="mt-auto p-8 space-y-3">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-50 dark:bg-white/5 rounded-[16px] border border-slate-200/50 dark:border-white/5">
+            <button 
+              onClick={toggleTheme}
+              className="flex-1 flex items-center justify-center py-2.5 rounded-[10px] transition-all hover:bg-white dark:hover:bg-white/10 hover:shadow-sm"
+              title={theme === "dark" ? t("light") : t("dark")}
+            >
+              {theme === "dark" ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-slate-600" />}
+            </button>
+            <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
+            <button 
+              onClick={() => i18n.changeLanguage(i18n.language === "en" ? "te" : "en")}
+              className="flex-1 flex items-center justify-center py-2.5 rounded-[10px] transition-all hover:bg-white dark:hover:bg-white/10 hover:shadow-sm text-xs font-bold text-slate-600 dark:text-slate-400"
+            >
+              {i18n.language === "en" ? "TE" : "EN"}
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Header for Mobile */}
-      <header className="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🌱</span>
-          <div className="flex flex-col leading-tight">
-            <span className="text-lg font-black text-brand-950 dark:text-white uppercase tracking-tighter">GRR</span>
-            <span className="text-[8px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest -mt-1">vegetables and onions</span>
+      <header className="lg:hidden bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+           <div className="w-9 h-9 bg-primary rounded-[10px] flex items-center justify-center text-lg shadow-lg shadow-primary/20">
+            🌱
           </div>
+          <span className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+             {t("appName").split(' ')[1] || t("appName")}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button 
-            onClick={toggleTheme}
-            className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300"
-          >
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-          <button 
             onClick={() => i18n.changeLanguage(i18n.language === "en" ? "te" : "en")}
-            className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300"
+            className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-white/10 rounded-full text-xs font-black text-slate-600 dark:text-slate-400 active:scale-90 transition-transform"
           >
-            <Globe size={20} />
+            {i18n.language === "en" ? "TE" : "EN"}
+          </button>
+           <button 
+            onClick={toggleTheme}
+            className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-white/10 rounded-full text-slate-600 dark:text-slate-400 active:scale-90 transition-transform"
+          >
+            {theme === "dark" ? <Sun size={20} className="text-amber-500" /> : <Moon size={20} />}
           </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 max-w-5xl mx-auto w-full">
+      <main className="flex-1 p-6 lg:p-12 w-full max-w-[1400px] mx-auto animate-slide-up">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeView}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             {activeView === "dashboard" && <Dashboard farmitre={farmitre} />}
             {activeView === "farmers" && <FarmerManagement farmitre={farmitre} />}
@@ -164,22 +176,27 @@ export default function App() {
       </main>
 
       {/* Mobile Bottom Tab Bar */}
-      <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white border border-slate-200 shadow-xl rounded-2xl p-2 z-50 flex justify-between items-center">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => handleNavClick(item.id as View)}
-            className={cn(
-              "flex flex-col items-center justify-center p-3 rounded-xl transition-all flex-1",
-              activeView === item.id 
-                ? "text-brand-600 bg-brand-50/50" 
-                : "text-slate-400 hover:text-slate-600"
-            )}
-          >
-            <item.icon size={22} />
-            <span className="text-[10px] mt-1 font-medium">{item.label}</span>
-          </button>
-        ))}
+      <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-[#111] dark:bg-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(255,255,255,0.1)] rounded-[24px] p-2 z-50 flex justify-around items-center">
+        {navItems.map((item) => {
+          const isActive = activeView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavClick(item.id as View)}
+              className={cn(
+                "flex flex-col items-center justify-center p-3 rounded-[18px] transition-all flex-1 min-w-0 active:scale-90",
+                isActive 
+                  ? "text-primary bg-white/10 dark:bg-slate-900/10" 
+                  : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+              <span className={cn("text-[9px] mt-1 font-bold uppercase tracking-tighter opacity-0 scale-50 h-0 overflow-hidden transition-all duration-300", isActive ? "opacity-100 scale-100 h-auto mt-1" : "")}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );

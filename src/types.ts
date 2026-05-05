@@ -18,7 +18,9 @@ export interface VegetableStock {
   vegetableId: string; // Restored to single ID
   date: string;
   importedBags: number;
+  oldBags?: number;
   totalKgs: number;
+  oldKgs?: number;
   pricingRows: PricingRow[];
   soldBags: number;
   soldKgs: number;
